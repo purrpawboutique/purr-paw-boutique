@@ -54,12 +54,15 @@ export default function Header({ cartCount, onCartClick }: HeaderProps) {
             </SheetContent>
           </Sheet>
 
-          <Link href="/" className="flex items-center gap-2" data-testid="link-logo">
+          <Link href="/" className="flex items-center gap-3" data-testid="link-logo">
             <img
               src={logo}
               alt="Purr & Paw Boutique"
-              className="h-10 md:h-14 w-auto rounded-md"
+              className="h-10 md:h-14 w-10 md:w-14 rounded-full object-cover"
             />
+            <span className="font-serif text-lg md:text-xl font-semibold text-foreground hidden sm:block">
+              Purr & Paw Boutique
+            </span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">

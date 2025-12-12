@@ -81,7 +81,8 @@ export default function ProductCard({ product, onAddToCart, onQuickView }: Produ
           }`}
         >
           <Button
-            className="flex-1"
+            variant="outline"
+            className="flex-1 bg-transparent backdrop-blur-sm border-white/60 text-white hover:bg-white/20"
             size="sm"
             onClick={() => onAddToCart(product)}
             data-testid={`button-add-to-cart-${product.id}`}
