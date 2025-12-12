@@ -294,8 +294,8 @@ function ShopPage() {
 
       <main className="pt-8">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 mb-8">
-          <h1 className="font-serif text-4xl font-medium mb-2">Shop All</h1>
-          <p className="text-muted-foreground">Discover our complete collection of premium pet clothing</p>
+          <h1 className="font-serif text-4xl font-medium mb-2">Shop All Products</h1>
+          <p className="text-muted-foreground">Browse our complete range of premium pet fashion</p>
         </div>
 
         <ProductGrid
@@ -321,6 +321,103 @@ function ShopPage() {
         isOpen={!!quickViewProduct}
         onClose={() => setQuickViewProduct(null)}
         onAddToCart={handleAddToCart}
+      />
+    </div>
+  );
+}
+
+function CollectionsPage() {
+  const [cartOpen, setCartOpen] = useState(false);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+
+  const handleAddToCart = (product: Product, quantity = 1, size = "M") => {
+    setCartItems((prev) => {
+      const existing = prev.find((item) => item.id === product.id);
+      if (existing) {
+        return prev.map((item) =>
+          item.id === product.id ? { ...item, quantity: item.quantity + quantity } : item
+        );
+      }
+      return [...prev, { ...product, quantity, size }];
+    });
+    toast({
+      title: "Added to cart",
+      description: `${product.name} has been added to your cart.`,
+    });
+  };
+
+  const handleUpdateQuantity = (id: string, quantity: number) => {
+    if (quantity === 0) {
+      setCartItems((prev) => prev.filter((item) => item.id !== id));
+    } else {
+      setCartItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, quantity } : item))
+      );
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header
+        cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+        onCartClick={() => setCartOpen(true)}
+      />
+
+      <main className="pt-8">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 mb-12">
+          <h1 className="font-serif text-4xl font-medium mb-2">Our Collections</h1>
+          <p className="text-muted-foreground">Explore our curated collections designed for every occasion</p>
+        </div>
+
+        <CategorySection
+          categories={mockCategories}
+          onCategoryClick={(cat) => {
+            toast({
+              title: cat.name,
+              description: `Viewing ${cat.productCount} products in this collection`,
+            });
+          }}
+        />
+
+        <section className="py-16">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <h2 className="font-serif text-3xl font-medium mb-8 text-center">Featured from Collections</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {mockCategories.map((category) => (
+                <div
+                  key={category.id}
+                  className="group cursor-pointer"
+                  onClick={() => setLocation("/shop")}
+                  data-testid={`collection-card-${category.id}`}
+                >
+                  <div className="aspect-[4/5] rounded-lg overflow-hidden mb-4">
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <h3 className="font-serif text-xl font-medium mb-1">{category.name}</h3>
+                  <p className="text-muted-foreground text-sm">{category.description}</p>
+                  <p className="text-sm text-primary mt-2">{category.productCount} items</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <Footer />
+
+      <CartDrawer
+        isOpen={cartOpen}
+        onClose={() => setCartOpen(false)}
+        items={cartItems}
+        onUpdateQuantity={handleUpdateQuantity}
+        onRemoveItem={(id) => setCartItems((prev) => prev.filter((item) => item.id !== id))}
+        onCheckout={() => console.log("Checkout")}
       />
     </div>
   );
@@ -500,7 +597,7 @@ function Router() {
     <Switch>
       <Route path="/" component={HomePage} />
       <Route path="/shop" component={ShopPage} />
-      <Route path="/collections" component={ShopPage} />
+      <Route path="/collections" component={CollectionsPage} />
       <Route path="/about" component={AboutPage} />
       <Route path="/contact" component={ContactPage} />
       <Route component={NotFoundPage} />

@@ -81,8 +81,8 @@ export default function ProductCard({ product, onAddToCart, onQuickView }: Produ
           }`}
         >
           <Button
-            variant="outline"
-            className="flex-1 bg-transparent backdrop-blur-sm border-white/60 text-white hover:bg-white/20"
+            variant="secondary"
+            className="flex-1 bg-white/95 text-foreground shadow-lg"
             size="sm"
             onClick={() => onAddToCart(product)}
             data-testid={`button-add-to-cart-${product.id}`}
@@ -106,11 +106,11 @@ export default function ProductCard({ product, onAddToCart, onQuickView }: Produ
         </h3>
         <div className="flex items-center gap-2">
           <span className="text-lg font-semibold" data-testid={`text-price-${product.id}`}>
-            ${product.price.toFixed(2)}
+            £{product.price.toFixed(2)}
           </span>
           {product.originalPrice && (
             <span className="text-sm text-muted-foreground line-through">
-              ${product.originalPrice.toFixed(2)}
+              £{product.originalPrice.toFixed(2)}
             </span>
           )}
         </div>

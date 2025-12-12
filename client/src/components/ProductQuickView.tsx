@@ -66,11 +66,11 @@ export default function ProductQuickView({
 
             <div className="flex items-center gap-3 mb-4">
               <span className="text-2xl font-semibold" data-testid="text-quickview-price">
-                ${product.price.toFixed(2)}
+                £{product.price.toFixed(2)}
               </span>
               {product.originalPrice && (
                 <span className="text-lg text-muted-foreground line-through">
-                  ${product.originalPrice.toFixed(2)}
+                  £{product.originalPrice.toFixed(2)}
                 </span>
               )}
             </div>

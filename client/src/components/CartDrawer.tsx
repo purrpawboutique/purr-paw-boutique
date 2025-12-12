@@ -106,7 +106,7 @@ export default function CartDrawer({
                           </Button>
                         </div>
                         <span className="font-semibold">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          £{(item.price * item.quantity).toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -119,22 +119,22 @@ export default function CartDrawer({
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>£{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Shipping</span>
-                  <span>{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</span>
+                  <span>{shipping === 0 ? "Free" : `£${shipping.toFixed(2)}`}</span>
                 </div>
                 {shipping > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    Free shipping on orders over $100
+                    Free shipping on orders over £100
                   </p>
                 )}
               </div>
               <Separator />
               <div className="flex justify-between font-semibold text-lg">
                 <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span>£{total.toFixed(2)}</span>
               </div>
               <Button
                 className="w-full"
