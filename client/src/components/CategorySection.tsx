@@ -16,7 +16,7 @@ interface CategorySectionProps {
 
 export default function CategorySection({ categories, onCategoryClick }: CategorySectionProps) {
   return (
-    <section className="py-16 md:py-24 bg-muted/30">
+    <section className="py-12 md:py-16 bg-muted/30">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="text-center mb-12">
           <p className="text-sm uppercase tracking-widest text-muted-foreground mb-3">

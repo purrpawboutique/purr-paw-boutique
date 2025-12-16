@@ -2,8 +2,8 @@ import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Heart, Mail, MapPin, Phone } from "lucide-react";
-import { SiInstagram, SiFacebook, SiPinterest, SiTiktok } from "react-icons/si";
+import { Heart, Mail, MapPin } from "lucide-react";
+import { SiInstagram, SiTiktok } from "react-icons/si";
 import logo from "@assets/purrpawboutique_logo_1765554533163.jpg";
 
 export default function Footer() {
@@ -23,19 +23,37 @@ export default function Footer() {
               Premium pet fashion for your beloved companions. Handcrafted with love, designed for comfort.
             </p>
             <div className="flex gap-3">
-              <Button variant="outline" size="icon" data-testid="link-instagram">
-                <SiInstagram className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" data-testid="link-facebook">
-                <SiFacebook className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" data-testid="link-pinterest">
-                <SiPinterest className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" data-testid="link-tiktok">
-                <SiTiktok className="h-4 w-4" />
-              </Button>
-            </div>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  asChild
+                  data-testid="link-instagram"
+                >
+                  <a 
+                    href="https://www.instagram.com/purrpawboutique/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    aria-label="Follow us on Instagram"
+                  >
+                    <SiInstagram className="h-4 w-4" />
+                  </a>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  asChild
+                  data-testid="link-tiktok"
+                >
+                  <a 
+                    href="https://www.tiktok.com/@purrpawboutique" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    aria-label="Follow us on TikTok"
+                  >
+                    <SiTiktok className="h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
           </div>
 
           <div>
@@ -47,13 +65,13 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/collections/dogs" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Dog Clothing
+                <Link href="/collections/bestsellers" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Best Sellers
                 </Link>
               </li>
               <li>
-                <Link href="/collections/cats" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Cat Clothing
+                <Link href="/collections" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Collections
                 </Link>
               </li>
               <li>
@@ -72,11 +90,6 @@ export default function Footer() {
           <div>
             <h4 className="font-serif text-lg font-medium mb-4">Customer Care</h4>
             <ul className="space-y-3 text-sm">
-              <li>
-                <Link href="/size-guide" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Size Guide
-                </Link>
-              </li>
               <li>
                 <Link href="/shipping" className="text-muted-foreground hover:text-foreground transition-colors">
                   Shipping & Returns
@@ -115,10 +128,6 @@ export default function Footer() {
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
                 <span>London, United Kingdom</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4" />
-                <span>+44 20 7123 4567</span>
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -14,9 +14,21 @@ import AboutSection from "@/components/AboutSection";
 import TestimonialSection from "@/components/TestimonialSection";
 import NewsletterBanner from "@/components/NewsletterBanner";
 import Footer from "@/components/Footer";
-import CartDrawer, { CartItem } from "@/components/CartDrawer";
+import CartDrawer from "@/components/CartDrawer";
 import ProductQuickView from "@/components/ProductQuickView";
+import ProductPage from "@/pages/ProductPage";
+import CheckoutPage from "@/pages/CheckoutPage";
+import AuthGatewayPage from "@/pages/AuthGatewayPage";
+import OrderConfirmationPage from "@/pages/OrderConfirmationPage";
+import ShippingPage from "@/pages/ShippingPage";
+import ReturnsPage from "@/pages/ReturnsPage";
+import CategoryPage from "@/pages/CategoryPage";
+import ThankYouPage from "@/pages/ThankYouPage";
+import SalePage from "@/pages/SalePage";
+import { CartProvider, useCart } from "@/contexts/CartContext";
+import ScrollToTop from "@/components/ScrollToTop";
 import { Product } from "@/components/ProductCard";
+import { holidayProducts, signatureProducts, ootdProducts, accessoriesProducts, handmadeKnitsProducts, allProducts, getMainProductImage } from "@/data/products";
 import { useToast } from "@/hooks/use-toast";
 
 import img1 from "@assets/IMG_3081_1765554779089.jpg";
@@ -27,96 +39,71 @@ import img5 from "@assets/IMG_3137_1765554802944.jpg";
 import img6 from "@assets/IMG_3073_1765554816106.jpg";
 import img7 from "@assets/IMG_3075_1765554816107.jpg";
 
-// todo: remove mock functionality - replace with API data
+// Convert all products to Product format for compatibility
 const mockProducts: Product[] = [
-  {
-    id: "1",
-    name: "Holiday Christmas Cape",
-    price: 59.99,
-    image: img1,
-    category: "Holiday Collection",
-    isNew: true,
-    isBestseller: true,
-  },
-  {
-    id: "2",
-    name: "Festive Red Dress",
-    price: 49.99,
-    image: img2,
-    category: "Holiday Collection",
-  },
-  {
-    id: "3",
-    name: "Christmas Collar Set",
-    price: 45.99,
-    originalPrice: 59.99,
-    image: img3,
-    category: "Accessories",
-    isBestseller: true,
-  },
-  {
-    id: "4",
-    name: "Circus Princess Gown",
-    price: 79.99,
-    image: img4,
-    category: "Dresses",
-    isNew: true,
-  },
-  {
-    id: "5",
-    name: "Royal Bunny Costume",
-    price: 89.99,
-    originalPrice: 109.99,
-    image: img5,
-    category: "Costumes",
-  },
-  {
-    id: "6",
-    name: "Elegant Blue Gown",
-    price: 74.99,
-    image: img6,
-    category: "Formal Wear",
-    isNew: true,
-  },
-  {
-    id: "7",
-    name: "Victorian Lace Dress",
-    price: 69.99,
-    image: img7,
-    category: "Dresses",
-    isBestseller: true,
-  },
-  {
-    id: "8",
-    name: "Holiday Tree Hat Set",
-    price: 39.99,
-    image: img1,
-    category: "Accessories",
-  },
+  ...allProducts.map(product => ({
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    originalPrice: product.originalPrice,
+    image: getMainProductImage(product),
+    category: product.category,
+    isNew: product.isNew,
+    isBestseller: product.isBestseller,
+    isOutOfStock: product.sizes?.every(size => !size.inStock) || false,
+  })),
 ];
 
 // todo: remove mock functionality
 const mockCategories = [
   {
     id: "1",
-    name: "Holiday Collection",
-    description: "Festive outfits for special occasions",
-    image: img2,
-    productCount: 24,
+    name: "Haute Couture · Fully Custom Made",
+    description: "This is fashion for legacy.",
+    image: "/images/products/haute-lady-shakespeare/main.jpg",
+    productCount: 1,
   },
   {
     id: "2",
-    name: "Costumes & Cosplay",
-    description: "Fun and creative pet costumes",
-    image: img5,
-    productCount: 18,
+    name: "Holiday Collection",
+    description: "Festive outfits for special occasions",
+    image: img2,
+    productCount: 4,
   },
   {
     id: "3",
-    name: "Elegant Dresses",
-    description: "Sophisticated styles for your pet",
-    image: img7,
-    productCount: 32,
+    name: "Signature Styles",
+    description: "Exclusive designer pieces",
+    image: img6,
+    productCount: 4,
+  },
+  {
+    id: "4",
+    name: "OOTD",
+    description: "Outfit of the day essentials",
+    image: "/images/products/ootd-sherlock-heritage-coat/main.jpg",
+    productCount: 6,
+  },
+  {
+    id: "5",
+    name: "Accessories",
+    description: "Premium pet accessories and essentials",
+    image: "/images/products/accessories-softwalk-leather-leash/main.jpg",
+    productCount: 2,
+  },
+  {
+    id: "6",
+    name: "Costumes",
+    description: "Fun and creative pet costumes",
+    image: img5,
+    productCount: 1,
+  },
+  {
+    id: "7",
+    name: "Handmade Cozy Knits",
+    description: "Luxurious handcrafted wool pieces",
+    image: "/images/products/knits-poncho-merino-wool-hoodie/main.jpg",
+    productCount: 2,
   },
 ];
 
@@ -149,74 +136,63 @@ const mockTestimonials = [
 ];
 
 function HomePage() {
-  const [cartOpen, setCartOpen] = useState(false);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
-  const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { 
+    cartItems, 
+    cartOpen, 
+    setCartOpen, 
+    addToCart, 
+    updateQuantity, 
+    removeItem, 
+    getTotalItems,
+    clearCart
+  } = useCart();
 
-  const handleAddToCart = (product: Product, quantity = 1, size = "M") => {
-    setCartItems((prev) => {
-      const existing = prev.find((item) => item.id === product.id && item.size === size);
-      if (existing) {
-        return prev.map((item) =>
-          item.id === product.id && item.size === size
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
-      }
-      return [...prev, { ...product, quantity, size }];
-    });
-    toast({
-      title: "Added to cart",
-      description: `${product.name} has been added to your cart.`,
-    });
-  };
-
-  const handleUpdateQuantity = (id: string, quantity: number) => {
-    if (quantity === 0) {
-      setCartItems((prev) => prev.filter((item) => item.id !== id));
-    } else {
-      setCartItems((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, quantity } : item))
-      );
-    }
-  };
-
-  const handleRemoveItem = (id: string) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
-  };
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
       <Header
-        cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+        cartCount={getTotalItems()}
         onCartClick={() => setCartOpen(true)}
       />
 
       <main>
-        <HeroSection onShopNow={() => setLocation("/shop")} />
+        <HeroSection 
+          onShopNow={() => setLocation("/shop")} 
+          onOurStory={() => setLocation("/about")}
+        />
         
         <FeaturesSection />
 
         <ProductGrid
-          products={mockProducts.slice(0, 4)}
+          products={mockProducts.filter(product => 
+            // New Arrivals - Holiday and Signature collections
+            product.id === "holiday-christmas-luxurious-gown" ||
+            product.id === "holiday-christmas-midnight-princess-gothic-lolita-dress" ||
+            product.id === "signature-sakura-fairy-princess-dress" ||
+            product.id === "signature-golden-soirée-set"
+          ).slice(0, 4)}
           title="New Arrivals"
           subtitle="Fresh styles for your fur baby"
-          onAddToCart={(product) => handleAddToCart(product)}
+          onAddToCart={addToCart}
           onQuickView={setQuickViewProduct}
         />
 
         <CategorySection
           categories={mockCategories}
-          onCategoryClick={(cat) => console.log("Navigate to:", cat.name)}
+          onCategoryClick={(cat) => setLocation(`/category/${encodeURIComponent(cat.name)}`)}
         />
 
         <ProductGrid
           products={mockProducts.slice(4)}
           title="Bestsellers"
           subtitle="Customer favorites"
-          onAddToCart={(product) => handleAddToCart(product)}
+          onAddToCart={addToCart}
           onQuickView={setQuickViewProduct}
         />
 
@@ -233,62 +209,43 @@ function HomePage() {
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
         items={cartItems}
-        onUpdateQuantity={handleUpdateQuantity}
-        onRemoveItem={handleRemoveItem}
-        onCheckout={() => {
-          toast({
-            title: "Checkout",
-            description: "Proceeding to checkout...",
-          });
-        }}
+        onUpdateQuantity={updateQuantity}
+        onRemoveItem={removeItem}
+        onCheckout={() => setLocation("/auth-gateway")}
       />
 
       <ProductQuickView
         product={quickViewProduct}
         isOpen={!!quickViewProduct}
         onClose={() => setQuickViewProduct(null)}
-        onAddToCart={handleAddToCart}
+        onAddToCart={addToCart}
       />
     </div>
   );
 }
 
 function ShopPage() {
-  const [cartOpen, setCartOpen] = useState(false);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
-  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const { 
+    cartItems, 
+    cartOpen, 
+    setCartOpen, 
+    addToCart, 
+    updateQuantity, 
+    removeItem, 
+    getTotalItems 
+  } = useCart();
 
-  const handleAddToCart = (product: Product, quantity = 1, size = "M") => {
-    setCartItems((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + quantity } : item
-        );
-      }
-      return [...prev, { ...product, quantity, size }];
-    });
-    toast({
-      title: "Added to cart",
-      description: `${product.name} has been added to your cart.`,
-    });
-  };
-
-  const handleUpdateQuantity = (id: string, quantity: number) => {
-    if (quantity === 0) {
-      setCartItems((prev) => prev.filter((item) => item.id !== id));
-    } else {
-      setCartItems((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, quantity } : item))
-      );
-    }
-  };
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
       <Header
-        cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+        cartCount={getTotalItems()}
         onCartClick={() => setCartOpen(true)}
       />
 
@@ -300,7 +257,7 @@ function ShopPage() {
 
         <ProductGrid
           products={mockProducts}
-          onAddToCart={(product) => handleAddToCart(product)}
+          onAddToCart={addToCart}
           onQuickView={setQuickViewProduct}
         />
       </main>
@@ -311,102 +268,58 @@ function ShopPage() {
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
         items={cartItems}
-        onUpdateQuantity={handleUpdateQuantity}
-        onRemoveItem={(id) => setCartItems((prev) => prev.filter((item) => item.id !== id))}
-        onCheckout={() => console.log("Checkout")}
+        onUpdateQuantity={updateQuantity}
+        onRemoveItem={removeItem}
+        onCheckout={() => setLocation("/auth-gateway")}
       />
 
       <ProductQuickView
         product={quickViewProduct}
         isOpen={!!quickViewProduct}
         onClose={() => setQuickViewProduct(null)}
-        onAddToCart={handleAddToCart}
+        onAddToCart={addToCart}
       />
     </div>
   );
 }
 
 function CollectionsPage() {
-  const [cartOpen, setCartOpen] = useState(false);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { 
+    cartItems, 
+    cartOpen, 
+    setCartOpen, 
+    addToCart, 
+    updateQuantity, 
+    removeItem, 
+    getTotalItems 
+  } = useCart();
 
-  const handleAddToCart = (product: Product, quantity = 1, size = "M") => {
-    setCartItems((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + quantity } : item
-        );
-      }
-      return [...prev, { ...product, quantity, size }];
-    });
-    toast({
-      title: "Added to cart",
-      description: `${product.name} has been added to your cart.`,
-    });
-  };
-
-  const handleUpdateQuantity = (id: string, quantity: number) => {
-    if (quantity === 0) {
-      setCartItems((prev) => prev.filter((item) => item.id !== id));
-    } else {
-      setCartItems((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, quantity } : item))
-      );
-    }
-  };
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
       <Header
-        cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+        cartCount={getTotalItems()}
         onCartClick={() => setCartOpen(true)}
       />
 
       <main className="pt-8">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 mb-12">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 mb-6">
           <h1 className="font-serif text-4xl font-medium mb-2">Our Collections</h1>
           <p className="text-muted-foreground">Explore our curated collections designed for every occasion</p>
         </div>
 
         <CategorySection
           categories={mockCategories}
-          onCategoryClick={(cat) => {
-            toast({
-              title: cat.name,
-              description: `Viewing ${cat.productCount} products in this collection`,
-            });
-          }}
+          onCategoryClick={(cat) => setLocation(`/category/${encodeURIComponent(cat.name)}`)}
         />
 
-        <section className="py-16">
-          <div className="max-w-7xl mx-auto px-6 lg:px-8">
-            <h2 className="font-serif text-3xl font-medium mb-8 text-center">Featured from Collections</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {mockCategories.map((category) => (
-                <div
-                  key={category.id}
-                  className="group cursor-pointer"
-                  onClick={() => setLocation("/shop")}
-                  data-testid={`collection-card-${category.id}`}
-                >
-                  <div className="aspect-[4/5] rounded-lg overflow-hidden mb-4">
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                  <h3 className="font-serif text-xl font-medium mb-1">{category.name}</h3>
-                  <p className="text-muted-foreground text-sm">{category.description}</p>
-                  <p className="text-sm text-primary mt-2">{category.productCount} items</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+
       </main>
 
       <Footer />
@@ -415,20 +328,25 @@ function CollectionsPage() {
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
         items={cartItems}
-        onUpdateQuantity={handleUpdateQuantity}
-        onRemoveItem={(id) => setCartItems((prev) => prev.filter((item) => item.id !== id))}
-        onCheckout={() => console.log("Checkout")}
+        onUpdateQuantity={updateQuantity}
+        onRemoveItem={removeItem}
+        onCheckout={() => setLocation("/auth-gateway")}
       />
     </div>
   );
 }
 
 function AboutPage() {
-  const [cartOpen, setCartOpen] = useState(false);
+  const { cartOpen, setCartOpen, getTotalItems } = useCart();
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
-      <Header cartCount={0} onCartClick={() => setCartOpen(true)} />
+      <Header cartCount={getTotalItems()} onCartClick={() => setCartOpen(true)} />
 
       <main>
         <section className="py-16 md:py-24">
@@ -477,8 +395,13 @@ function AboutPage() {
 }
 
 function ContactPage() {
-  const [cartOpen, setCartOpen] = useState(false);
+  const { cartOpen, setCartOpen, getTotalItems } = useCart();
   const { toast } = useToast();
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -490,7 +413,7 @@ function ContactPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header cartCount={0} onCartClick={() => setCartOpen(true)} />
+      <Header cartCount={getTotalItems()} onCartClick={() => setCartOpen(true)} />
 
       <main className="py-16 md:py-24">
         <div className="max-w-2xl mx-auto px-6 lg:px-8">
@@ -592,16 +515,44 @@ function NotFoundPage() {
   );
 }
 
+function CheckoutPageWrapper() {
+  const { cartItems, clearCart } = useCart();
+
+  const handleOrderComplete = (orderId: string) => {
+    // Clear cart after successful order
+    clearCart();
+  };
+
+  return (
+    <CheckoutPage 
+      cartItems={cartItems} 
+      onOrderComplete={handleOrderComplete}
+    />
+  );
+}
+
 function Router() {
   return (
-    <Switch>
-      <Route path="/" component={HomePage} />
-      <Route path="/shop" component={ShopPage} />
-      <Route path="/collections" component={CollectionsPage} />
-      <Route path="/about" component={AboutPage} />
-      <Route path="/contact" component={ContactPage} />
-      <Route component={NotFoundPage} />
-    </Switch>
+    <>
+      <ScrollToTop />
+      <Switch>
+        <Route path="/" component={HomePage} />
+        <Route path="/shop" component={ShopPage} />
+        <Route path="/collections" component={CollectionsPage} />
+        <Route path="/sale" component={SalePage} />
+        <Route path="/about" component={AboutPage} />
+        <Route path="/contact" component={ContactPage} />
+        <Route path="/shipping" component={ShippingPage} />
+        <Route path="/returns" component={ReturnsPage} />
+        <Route path="/category/:categoryName" component={CategoryPage} />
+        <Route path="/product/:id" component={ProductPage} />
+        <Route path="/auth-gateway" component={AuthGatewayPage} />
+        <Route path="/checkout" component={CheckoutPageWrapper} />
+        <Route path="/thank-you" component={ThankYouPage} />
+        <Route path="/order-confirmation/:orderId?" component={OrderConfirmationPage} />
+        <Route component={NotFoundPage} />
+      </Switch>
+    </>
   );
 }
 
@@ -609,8 +560,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Router />
+        <CartProvider>
+          <Toaster />
+          <Router />
+        </CartProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

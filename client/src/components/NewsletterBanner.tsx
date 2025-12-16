@@ -20,7 +20,7 @@ export default function NewsletterBanner() {
   };
 
   return (
-    <section className="relative py-20 overflow-hidden">
+    <section className="relative py-16 overflow-hidden">
       <div className="absolute inset-0">
         <img
           src={bannerImage}

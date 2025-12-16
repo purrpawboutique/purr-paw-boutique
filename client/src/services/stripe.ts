@@ -1,0 +1,75 @@
+import { loadStripe } from '@stripe/stripe-js';
+
+// Initialize Stripe
+const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+if (!publishableKey) {
+  throw new Error('VITE_STRIPE_PUBLISHABLE_KEY is not set in environment variables');
+}
+const stripePromise = loadStripe(publishableKey);
+
+export interface CheckoutItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  size?: string;
+  image?: string;
+}
+
+export interface CreateCheckoutSessionRequest {
+  items: CheckoutItem[];
+  customerEmail?: string;
+}
+
+export interface CreateCheckoutSessionResponse {
+  sessionId: string;
+  url: string;
+}
+
+export async function createCheckoutSession(
+  request: CreateCheckoutSessionRequest
+): Promise<CreateCheckoutSessionResponse> {
+  const response = await fetch('/api/create-checkout-session', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create checkout session');
+  }
+
+  return response.json();
+}
+
+export async function redirectToCheckout(sessionId: string): Promise<void> {
+  const stripe = await stripePromise;
+  
+  if (!stripe) {
+    throw new Error('Stripe failed to load');
+  }
+
+  const { error } = await stripe.redirectToCheckout({
+    sessionId,
+  });
+
+  if (error) {
+    throw new Error(error.message || 'Failed to redirect to checkout');
+  }
+}
+
+export async function getCheckoutSession(sessionId: string) {
+  const response = await fetch(`/api/checkout-session/${sessionId}`);
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to retrieve session');
+  }
+
+  return response.json();
+}
+
+export { stripePromise };

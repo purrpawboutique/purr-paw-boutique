@@ -1,8 +1,12 @@
+import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Minus, Plus, X, ShoppingBag } from "lucide-react";
+import { Minus, Plus, X, ShoppingBag, CreditCard } from "lucide-react";
 import { Product } from "./ProductCard";
+import { createCheckoutSession, redirectToCheckout } from "@/services/stripe";
+import { useToast } from "@/hooks/use-toast";
 
 export interface CartItem extends Product {
   quantity: number;
@@ -13,8 +17,8 @@ interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   items: CartItem[];
-  onUpdateQuantity: (id: string, quantity: number) => void;
-  onRemoveItem: (id: string) => void;
+  onUpdateQuantity: (id: string, quantity: number, size?: string) => void;
+  onRemoveItem: (id: string, size?: string) => void;
   onCheckout: () => void;
 }
 
@@ -26,9 +30,68 @@ export default function CartDrawer({
   onRemoveItem,
   onCheckout,
 }: CartDrawerProps) {
+  const [, setLocation] = useLocation();
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shipping = subtotal > 100 ? 0 : 9.99;
+  const shipping = subtotal > 75 ? 0 : 9.99; // Free shipping over £75
   const total = subtotal + shipping;
+
+  // Save cart items to localStorage whenever items change
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(items));
+  }, [items]);
+
+  const handleStripeCheckout = async () => {
+    if (items.length === 0) {
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      // Convert cart items to checkout format
+      const checkoutItems = items.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        size: item.size,
+        image: item.image,
+      }));
+
+      // Create checkout session
+      const { sessionId } = await createCheckoutSession({
+        items: checkoutItems,
+      });
+
+      // Redirect to Stripe Checkout
+      await redirectToCheckout(sessionId);
+      
+      // Clear cart after successful redirect
+      onCheckout();
+      onClose();
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "Checkout Error",
+        description: error instanceof Error ? error.message : "Failed to start checkout process",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLegacyCheckout = () => {
+    if (items.length === 0) {
+      return;
+    }
+    onClose();
+    onCheckout();
+    setLocation("/auth-gateway");
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -54,9 +117,9 @@ export default function CartDrawer({
               <div className="space-y-4">
                 {items.map((item) => (
                   <div
-                    key={item.id}
+                    key={`${item.id}-${item.size || "M"}`}
                     className="flex gap-4"
-                    data-testid={`cart-item-${item.id}`}
+                    data-testid={`cart-item-${item.id}-${item.size}`}
                   >
                     <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
                       <img
@@ -72,7 +135,7 @@ export default function CartDrawer({
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6 flex-shrink-0"
-                          onClick={() => onRemoveItem(item.id)}
+                          onClick={() => onRemoveItem(item.id, item.size || "M")}
                           data-testid={`button-remove-${item.id}`}
                         >
                           <X className="h-4 w-4" />
@@ -88,7 +151,7 @@ export default function CartDrawer({
                             size="icon"
                             className="h-8 w-8"
                             onClick={() =>
-                              onUpdateQuantity(item.id, Math.max(0, item.quantity - 1))
+                              onUpdateQuantity(item.id, Math.max(0, item.quantity - 1), item.size || "M")
                             }
                             data-testid={`button-decrease-${item.id}`}
                           >
@@ -99,7 +162,7 @@ export default function CartDrawer({
                             variant="outline"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => onUpdateQuantity(item.id, item.quantity + 1, item.size || "M")}
                             data-testid={`button-increase-${item.id}`}
                           >
                             <Plus className="h-3 w-3" />
@@ -125,9 +188,19 @@ export default function CartDrawer({
                   <span className="text-muted-foreground">Shipping</span>
                   <span>{shipping === 0 ? "Free" : `£${shipping.toFixed(2)}`}</span>
                 </div>
-                {shipping > 0 && (
+                {shipping > 0 && items.length === 1 && (
                   <p className="text-xs text-muted-foreground">
-                    Free shipping on orders over £100
+                    Add 1 more item for free shipping
+                  </p>
+                )}
+                {shipping > 0 && items.length > 1 && (
+                  <p className="text-xs text-muted-foreground">
+                    Free shipping on orders over £75
+                  </p>
+                )}
+                {shipping === 0 && (
+                  <p className="text-xs text-green-600">
+                    🎉 You qualify for free shipping!
                   </p>
                 )}
               </div>
@@ -136,14 +209,36 @@ export default function CartDrawer({
                 <span>Total</span>
                 <span>£{total.toFixed(2)}</span>
               </div>
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={onCheckout}
-                data-testid="button-checkout"
-              >
-                Proceed to Checkout
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={handleStripeCheckout}
+                  disabled={isLoading}
+                  data-testid="button-stripe-checkout"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Checkout with Stripe
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  size="lg"
+                  onClick={handleLegacyCheckout}
+                  data-testid="button-legacy-checkout"
+                >
+                  Alternative Checkout
+                </Button>
+              </div>
             </div>
           </>
         )}

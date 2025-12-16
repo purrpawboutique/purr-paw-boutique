@@ -16,7 +16,7 @@ export default function ProductGrid({
   onQuickView,
 }: ProductGridProps) {
   return (
-    <section className="py-16 md:py-24">
+    <section className="py-12 md:py-16">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         {(title || subtitle) && (
           <div className="text-center mb-12">

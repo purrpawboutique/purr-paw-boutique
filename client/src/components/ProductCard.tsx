@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ export interface Product {
   category: string;
   isNew?: boolean;
   isBestseller?: boolean;
+  isOutOfStock?: boolean;
 }
 
 interface ProductCardProps {
@@ -24,6 +26,7 @@ interface ProductCardProps {
 export default function ProductCard({ product, onAddToCart, onQuickView }: ProductCardProps) {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [, setLocation] = useLocation();
 
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -36,7 +39,10 @@ export default function ProductCard({ product, onAddToCart, onQuickView }: Produ
       onMouseLeave={() => setIsHovered(false)}
       data-testid={`card-product-${product.id}`}
     >
-      <div className="relative aspect-square overflow-hidden rounded-t-lg">
+      <div 
+        className="relative aspect-square overflow-hidden rounded-t-lg cursor-pointer"
+        onClick={() => setLocation(`/product/${product.id}`)}
+      >
         <img
           src={product.image}
           alt={product.name}
@@ -44,20 +50,28 @@ export default function ProductCard({ product, onAddToCart, onQuickView }: Produ
         />
         
         <div className="absolute top-3 left-3 flex flex-col gap-2">
-          {product.isNew && (
-            <Badge variant="default" className="text-xs">
-              New
-            </Badge>
-          )}
-          {product.isBestseller && (
-            <Badge variant="secondary" className="text-xs">
-              Bestseller
-            </Badge>
-          )}
-          {discount > 0 && (
-            <Badge variant="destructive" className="text-xs">
-              -{discount}%
-            </Badge>
+          {discount > 0 ? (
+            <>
+              <Badge variant="destructive" className="text-xs">
+                Sale
+              </Badge>
+              <Badge variant="destructive" className="text-xs">
+                -{discount}%
+              </Badge>
+            </>
+          ) : (
+            <>
+              {product.isNew && (
+                <Badge variant="default" className="text-xs">
+                  New
+                </Badge>
+              )}
+              {product.isBestseller && (
+                <Badge variant="secondary" className="text-xs">
+                  Bestseller
+                </Badge>
+              )}
+            </>
           )}
         </div>
 
@@ -84,11 +98,26 @@ export default function ProductCard({ product, onAddToCart, onQuickView }: Produ
             variant="secondary"
             className="flex-1 bg-white/95 text-foreground shadow-lg"
             size="sm"
-            onClick={() => onAddToCart(product)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToCart(product);
+            }}
             data-testid={`button-add-to-cart-${product.id}`}
           >
             <ShoppingBag className="h-4 w-4 mr-2" />
             Add to Cart
+          </Button>
+          <Button
+            variant="outline"
+            className="bg-white/95 shadow-lg"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLocation(`/product/${product.id}`);
+            }}
+            data-testid={`button-view-details-${product.id}`}
+          >
+            View
           </Button>
         </div>
       </div>
@@ -99,7 +128,7 @@ export default function ProductCard({ product, onAddToCart, onQuickView }: Produ
         </p>
         <h3
           className="font-serif text-lg font-medium mb-2 cursor-pointer hover:text-primary transition-colors"
-          onClick={() => onQuickView?.(product)}
+          onClick={() => setLocation(`/product/${product.id}`)}
           data-testid={`text-product-name-${product.id}`}
         >
           {product.name}
@@ -111,6 +140,11 @@ export default function ProductCard({ product, onAddToCart, onQuickView }: Produ
           {product.originalPrice && (
             <span className="text-sm text-muted-foreground line-through">
               £{product.originalPrice.toFixed(2)}
+            </span>
+          )}
+          {product.isOutOfStock && (
+            <span className="text-sm text-red-600 font-medium">
+              Out of Stock
             </span>
           )}
         </div>
