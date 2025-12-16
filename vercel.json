@@ -7,37 +7,14 @@
       "runtime": "@vercel/node"
     }
   },
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/create-checkout-session",
-      "dest": "/api/stripe.ts"
+      "source": "/api/(.*)",
+      "destination": "/api/stripe.ts"
     },
     {
-      "src": "/api/create-payment-intent", 
-      "dest": "/api/stripe.ts"
-    },
-    {
-      "src": "/api/checkout-session/(.*)",
-      "dest": "/api/stripe.ts"
-    },
-    {
-      "src": "/api/stripe-webhook",
-      "dest": "/api/stripe.ts"
-    },
-    {
-      "src": "/api/orders",
-      "dest": "/api/stripe.ts"
-    },
-    {
-      "src": "/api/orders/(.*)",
-      "dest": "/api/stripe.ts"
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
