@@ -1,20 +1,43 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "builds": [
-    {
-      "src": "api/index.ts",
-      "use": "@vercel/node"
+  "outputDirectory": "dist/public",
+  "functions": {
+    "api/stripe.ts": {
+      "runtime": "@vercel/node"
     }
-  ],
+  },
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/index.ts"
+      "src": "/api/create-checkout-session",
+      "dest": "/api/stripe.ts"
+    },
+    {
+      "src": "/api/create-payment-intent", 
+      "dest": "/api/stripe.ts"
+    },
+    {
+      "src": "/api/checkout-session/(.*)",
+      "dest": "/api/stripe.ts"
+    },
+    {
+      "src": "/api/stripe-webhook",
+      "dest": "/api/stripe.ts"
+    },
+    {
+      "src": "/api/orders",
+      "dest": "/api/stripe.ts"
+    },
+    {
+      "src": "/api/orders/(.*)",
+      "dest": "/api/stripe.ts"
+    },
+    {
+      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
-      "dest": "/api/index.ts"
+      "dest": "/index.html"
     }
   ]
 }

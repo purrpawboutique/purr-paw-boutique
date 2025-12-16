@@ -1,0 +1,16 @@
+import { VercelRequest, VercelResponse } from '@vercel/node';
+
+export default function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Content-Type', 'text/html');
+  return res.status(200).send(`
+    <html>
+      <head><title>API Test</title></head>
+      <body>
+        <h1>API is working!</h1>
+        <p>Time: ${new Date().toISOString()}</p>
+        <p>Method: ${req.method}</p>
+        <p>URL: ${req.url}</p>
+      </body>
+    </html>
+  `);
+}
