@@ -30,6 +30,13 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Ignore asset not found warnings
+        if (warning.code === 'ASSET_NOT_FOUND') return;
+        warn(warning);
+      }
+    }
   },
   server: {
     fs: {
