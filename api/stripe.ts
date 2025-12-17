@@ -1,5 +1,17 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
+import { IncomingMessage, ServerResponse } from 'http';
+
+// Use standard Node.js types for Vercel compatibility
+type VercelRequest = IncomingMessage & {
+  query: { [key: string]: string | string[] };
+  body: any;
+};
+
+type VercelResponse = ServerResponse & {
+  status: (code: number) => VercelResponse;
+  json: (data: any) => VercelResponse;
+  send: (data: string) => VercelResponse;
+};
 
 // Initialize Stripe
 const secretKey = process.env.STRIPE_SECRET_KEY;

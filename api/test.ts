@@ -1,4 +1,16 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import { IncomingMessage, ServerResponse } from 'http';
+
+// Use standard Node.js types for Vercel compatibility
+type VercelRequest = IncomingMessage & {
+  query: { [key: string]: string | string[] };
+  body: any;
+};
+
+type VercelResponse = ServerResponse & {
+  status: (code: number) => VercelResponse;
+  json: (data: any) => VercelResponse;
+  send: (data: string) => VercelResponse;
+};
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Content-Type', 'text/html');
