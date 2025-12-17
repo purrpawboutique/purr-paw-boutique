@@ -1,3 +1,4 @@
+dist
 node_modules
 .env.local
 .env.*.local
@@ -8,13 +9,6 @@ yarn-error.log*
 *.tsbuildinfo
 .vscode
 .git
-README.md
-*.md
-client/src
-server
-script
-tsconfig.json
-vite.config.ts
-tailwind.config.ts
-postcss.config.js
-components.json
+# Keep build scripts included (Vercel needs script/build.ts during build)
+!script/
+!script/**

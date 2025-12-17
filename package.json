@@ -3,10 +3,15 @@
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
-    "build": "tsx script/build.ts",
-    "vercel-build": "npm run build",
+    "prebuild": "node -e \"const fs = require('fs'); const {execSync} = require('child_process'); const p='script/build.ts'; console.log('--- prebuild diagnostics ---'); console.log('PWD:', process.cwd()); try { console.log('--- ls -la ---'); execSync('ls -la', { stdio: 'inherit' }); } catch (e) { console.error('ls failed:', e?.message||e); } try { console.log('--- ls -la script ---'); execSync('ls -la script', { stdio: 'inherit' }); } catch (e) { console.error('ls script failed:', e?.message||e); } try { console.log('--- head -n 20 script/build.ts ---'); execSync('head -n 20 script/build.ts', { stdio: 'inherit' }); } catch (e) { console.error('head build.ts failed:', e?.message||e); } if(!fs.existsSync(p)){ console.error('ERROR: Missing '+p+' in build workspace. This usually means Vercel is building from a different Root Directory or the file is excluded by ignore rules.'); process.exit(1);} console.log('OK: Found '+p);\"",
+    "build": "tsx ./script/build.ts",
+    "build:vercel": "tsx ./script/build.ts",
+    "vercel-build": "npm run prebuild && npm run build:vercel",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "db:push": "drizzle-kit push"
