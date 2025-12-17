@@ -38,11 +38,25 @@ export async function createCheckoutSession(
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to create checkout session');
+    // Try to parse as JSON, fallback to text if it fails
+    let errorMessage = 'Failed to create checkout session';
+    try {
+      const error = await response.json();
+      errorMessage = error.error || errorMessage;
+    } catch {
+      // If JSON parsing fails, get the text response
+      const text = await response.text();
+      errorMessage = text || `HTTP ${response.status}: ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
   }
 
-  return response.json();
+  // Parse response as JSON
+  try {
+    return await response.json();
+  } catch (error) {
+    throw new Error('Invalid response from server. Please try again.');
+  }
 }
 
 export async function redirectToCheckout(sessionId: string): Promise<void> {

@@ -72,42 +72,50 @@ async function handleCreateCheckoutSession(req: VercelRequest, res: VercelRespon
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { items, customerEmail } = req.body;
-  
-  if (!items || !Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ error: 'Invalid items' });
-  }
+  try {
+    const { items, customerEmail } = req.body;
+    
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'Invalid items' });
+    }
 
-  const lineItems = items.map((item: any) => ({
-    price_data: {
-      currency: 'gbp',
-      product_data: {
-        name: item.name,
-        description: item.size ? `Size: ${item.size}` : undefined,
-        images: item.image ? [`https://purrpawboutique.uk${item.image}`] : undefined,
+    console.log('Creating checkout session for', items.length, 'items');
+
+    const lineItems = items.map((item: any) => ({
+      price_data: {
+        currency: 'gbp',
+        product_data: {
+          name: item.name,
+          description: item.size ? `Size: ${item.size}` : undefined,
+          images: item.image ? [`https://purrpawboutique.uk${item.image}`] : undefined,
+        },
+        unit_amount: Math.round(item.price * 100),
       },
-      unit_amount: Math.round(item.price * 100),
-    },
-    quantity: item.quantity,
-  }));
+      quantity: item.quantity,
+    }));
 
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ['card'],
-    line_items: lineItems,
-    mode: 'payment',
-    success_url: 'https://purrpawboutique.uk/thank-you?session_id={CHECKOUT_SESSION_ID}',
-    cancel_url: 'https://purrpawboutique.uk/cart',
-    customer_email: customerEmail,
-    shipping_address_collection: {
-      allowed_countries: ['GB', 'IE', 'FR', 'DE', 'ES', 'IT', 'NL', 'BE'],
-    },
-    billing_address_collection: 'required',
-    metadata: {
-      items: JSON.stringify(items),
-    },
-  });
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: lineItems,
+      mode: 'payment',
+      success_url: 'https://purrpawboutique.uk/thank-you?session_id={CHECKOUT_SESSION_ID}',
+      cancel_url: 'https://purrpawboutique.uk/cart',
+      customer_email: customerEmail,
+      shipping_address_collection: {
+        allowed_countries: ['GB', 'IE', 'FR', 'DE', 'ES', 'IT', 'NL', 'BE'],
+      },
+      billing_address_collection: 'required',
+      metadata: {
+        items: JSON.stringify(items),
+      },
+    });
 
-  return res.json({ sessionId: session.id, url: session.url });
+    console.log('✅ Checkout session created:', session.id);
+    return res.status(200).json({ sessionId: session.id, url: session.url });
+  } catch (error: any) {
+    console.error('❌ Checkout session error:', error.message);
+    return res.status(500).json({ error: error.message || 'Failed to create checkout session' });
+  }
 }
 
 async function handleCreatePaymentIntent(req: VercelRequest, res: VercelResponse) {

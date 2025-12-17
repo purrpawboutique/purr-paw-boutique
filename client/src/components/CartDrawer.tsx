@@ -225,18 +225,9 @@ export default function CartDrawer({
                   ) : (
                     <>
                       <CreditCard className="mr-2 h-4 w-4" />
-                      Checkout with Stripe
+                      Checkout
                     </>
                   )}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  size="lg"
-                  onClick={handleLegacyCheckout}
-                  data-testid="button-legacy-checkout"
-                >
-                  Alternative Checkout
                 </Button>
               </div>
             </div>
