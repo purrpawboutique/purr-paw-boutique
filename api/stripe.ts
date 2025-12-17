@@ -1,17 +1,5 @@
+import type { IncomingMessage, ServerResponse } from "http";
 import Stripe from 'stripe';
-import { IncomingMessage, ServerResponse } from 'http';
-
-// Use standard Node.js types for Vercel compatibility
-type VercelRequest = IncomingMessage & {
-  query: { [key: string]: string | string[] };
-  body: any;
-};
-
-type VercelResponse = ServerResponse & {
-  status: (code: number) => VercelResponse;
-  json: (data: any) => VercelResponse;
-  send: (data: string) => VercelResponse;
-};
 
 // Initialize Stripe
 const secretKey = process.env.STRIPE_SECRET_KEY;
@@ -30,7 +18,7 @@ export const config = {
 };
 
 // Helper to get raw body
-async function getRawBody(req: VercelRequest): Promise<string> {
+async function getRawBody(req: IncomingMessage): Promise<string> {
   const chunks: Buffer[] = [];
   return new Promise((resolve, reject) => {
     req.on('data', (chunk: Buffer) => chunks.push(chunk));
@@ -39,16 +27,16 @@ async function getRawBody(req: VercelRequest): Promise<string> {
   });
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { method, url } = req;
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
+  const { method, url } = req as any;
   
   // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, stripe-signature');
+  (res as any).setHeader('Access-Control-Allow-Origin', '*');
+  (res as any).setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  (res as any).setHeader('Access-Control-Allow-Headers', 'Content-Type, stripe-signature');
   
   if (method === 'OPTIONS') {
-    return res.status(200).end();
+    return (res as any).status(200).end();
   }
 
   try {
@@ -72,23 +60,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return await handleOrders(req, res);
     }
     
-    return res.status(404).json({ error: 'Not found' });
+    return (res as any).status(404).json({ error: 'Not found' });
   } catch (error) {
     console.error('API Error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return (res as any).status(500).json({ error: 'Internal server error' });
   }
 }
 
-async function handleCreateCheckoutSession(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+async function handleCreateCheckoutSession(req: IncomingMessage, res: ServerResponse) {
+  if ((req as any).method !== 'POST') {
+    return (res as any).status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { items, customerEmail } = req.body;
+    const { items, customerEmail } = (req as any).body;
     
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: 'Invalid items' });
+      return (res as any).status(400).json({ error: 'Invalid items' });
     }
 
     console.log('Creating checkout session for', items.length, 'items');
@@ -123,22 +111,22 @@ async function handleCreateCheckoutSession(req: VercelRequest, res: VercelRespon
     });
 
     console.log('✅ Checkout session created:', session.id);
-    return res.status(200).json({ sessionId: session.id, url: session.url });
+    return (res as any).status(200).json({ sessionId: session.id, url: session.url });
   } catch (error: any) {
     console.error('❌ Checkout session error:', error.message);
-    return res.status(500).json({ error: error.message || 'Failed to create checkout session' });
+    return (res as any).status(500).json({ error: error.message || 'Failed to create checkout session' });
   }
 }
 
-async function handleCreatePaymentIntent(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+async function handleCreatePaymentIntent(req: IncomingMessage, res: ServerResponse) {
+  if ((req as any).method !== 'POST') {
+    return (res as any).status(405).json({ error: 'Method not allowed' });
   }
 
-  const { amount, currency = 'gbp', items } = req.body;
+  const { amount, currency = 'gbp', items } = (req as any).body;
   
   if (!amount || amount < 50) {
-    return res.status(400).json({ error: 'Invalid amount' });
+    return (res as any).status(400).json({ error: 'Invalid amount' });
   }
 
   const paymentIntent = await stripe.paymentIntents.create({
@@ -148,27 +136,27 @@ async function handleCreatePaymentIntent(req: VercelRequest, res: VercelResponse
     metadata: { items: JSON.stringify(items) },
   });
 
-  return res.json({
+  return (res as any).json({
     client_secret: paymentIntent.client_secret,
     payment_intent_id: paymentIntent.id,
   });
 }
 
-async function handleGetCheckoutSession(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+async function handleGetCheckoutSession(req: IncomingMessage, res: ServerResponse) {
+  if ((req as any).method !== 'GET') {
+    return (res as any).status(405).json({ error: 'Method not allowed' });
   }
 
-  const sessionId = req.url?.split('/').pop();
+  const sessionId = (req as any).url?.split('/').pop();
   if (!sessionId) {
-    return res.status(400).json({ error: 'Session ID required' });
+    return (res as any).status(400).json({ error: 'Session ID required' });
   }
 
   const session = await stripe.checkout.sessions.retrieve(sessionId, {
     expand: ['line_items', 'customer_details'],
   });
 
-  return res.json({
+  return (res as any).json({
     id: session.id,
     payment_status: session.payment_status,
     customer_details: session.customer_details,
@@ -179,12 +167,12 @@ async function handleGetCheckoutSession(req: VercelRequest, res: VercelResponse)
   });
 }
 
-async function handleStripeWebhook(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+async function handleStripeWebhook(req: IncomingMessage, res: ServerResponse) {
+  if ((req as any).method !== 'POST') {
+    return (res as any).status(405).json({ error: 'Method not allowed' });
   }
 
-  const sig = req.headers['stripe-signature'] as string;
+  const sig = (req as any).headers['stripe-signature'] as string;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   
   if (!webhookSecret) {
@@ -196,10 +184,10 @@ async function handleStripeWebhook(req: VercelRequest, res: VercelResponse) {
       const rawBody = await getRawBody(req);
       const event = JSON.parse(rawBody);
       await processWebhookEvent(event);
-      return res.json({ received: true, warning: 'no_signature_verification' });
+      return (res as any).json({ received: true, warning: 'no_signature_verification' });
     } catch (err: any) {
       console.error('Failed to parse webhook body:', err.message);
-      return res.status(400).send('Invalid webhook payload');
+      return (res as any).status(400).send('Invalid webhook payload');
     }
   }
 
@@ -211,11 +199,11 @@ async function handleStripeWebhook(req: VercelRequest, res: VercelResponse) {
     console.log('✅ Webhook signature verified:', event.type);
   } catch (err: any) {
     console.error('❌ Webhook signature verification failed:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    return (res as any).status(400).send(`Webhook Error: ${err.message}`);
   }
 
   await processWebhookEvent(event);
-  return res.json({ received: true });
+  return (res as any).json({ received: true });
 }
 
 async function processWebhookEvent(event: any) {
@@ -237,14 +225,14 @@ async function processWebhookEvent(event: any) {
   }
 }
 
-async function handleOrders(req: VercelRequest, res: VercelResponse) {
-  if (req.method === 'POST') {
+async function handleOrders(req: IncomingMessage, res: ServerResponse) {
+  if ((req as any).method === 'POST') {
     // Create order
-    const { paymentIntentId, customerInfo, shippingAddress, billingAddress, items, totals } = req.body;
+    const { paymentIntentId, customerInfo, shippingAddress, billingAddress, items, totals } = (req as any).body;
     
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
     if (paymentIntent.status !== 'succeeded') {
-      return res.status(400).json({ error: 'Payment not completed' });
+      return (res as any).status(400).json({ error: 'Payment not completed' });
     }
 
     const orderNumber = `PPB-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
@@ -263,7 +251,7 @@ async function handleOrders(req: VercelRequest, res: VercelResponse) {
     };
 
     console.log('Order created:', order);
-    return res.json({
+    return (res as any).json({
       success: true,
       order: {
         id: order.id,
@@ -273,9 +261,9 @@ async function handleOrders(req: VercelRequest, res: VercelResponse) {
     });
   }
   
-  if (req.method === 'GET') {
+  if ((req as any).method === 'GET') {
     // Get order
-    const orderId = req.url?.split('/').pop();
+    const orderId = (req as any).url?.split('/').pop();
     const mockOrder = {
       id: orderId,
       orderNumber: `PPB-2024-${String(Date.now()).slice(-6)}`,
@@ -309,8 +297,8 @@ async function handleOrders(req: VercelRequest, res: VercelResponse) {
       },
     };
 
-    return res.json(mockOrder);
+    return (res as any).json(mockOrder);
   }
   
-  return res.status(405).json({ error: 'Method not allowed' });
+  return (res as any).status(405).json({ error: 'Method not allowed' });
 }
