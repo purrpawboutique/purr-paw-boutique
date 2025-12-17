@@ -1,5 +1,21 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
+
+// Use Node.js types instead of @vercel/node to avoid build errors
+interface VercelRequest {
+  method?: string;
+  url?: string;
+  headers: { [key: string]: string | string[] | undefined };
+  body: any;
+  on: (event: string, callback: (chunk: Buffer) => void) => void;
+}
+
+interface VercelResponse {
+  status: (code: number) => VercelResponse;
+  json: (data: any) => void;
+  send: (data: string) => void;
+  end: () => void;
+  setHeader: (name: string, value: string) => void;
+}
 
 // Initialize Stripe
 const secretKey = process.env.STRIPE_SECRET_KEY;
