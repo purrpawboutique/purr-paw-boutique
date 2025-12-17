@@ -1,18 +1,4 @@
-// Use Node.js types instead of @vercel/node to avoid build errors
-interface VercelRequest {
-  method?: string;
-  url?: string;
-  headers: { [key: string]: string | string[] | undefined };
-  body: any;
-}
-
-interface VercelResponse {
-  status: (code: number) => VercelResponse;
-  json: (data: any) => void;
-  send: (data: string) => void;
-  end: () => void;
-  setHeader: (name: string, value: string) => void;
-}
+import { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Content-Type', 'text/html');
