@@ -1,6 +1,6 @@
 dist
 node_modules
 .DS_Store
-# IMPORTANT: do not ignore build scripts; Vercel needs script/build.ts during build
+# Keep build scripts included (Vercel needs script/build.ts during build)
 !script/
 !script/**
