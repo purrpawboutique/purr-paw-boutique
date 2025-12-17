@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
-    "prebuild": "node -e \"const fs=require('fs'); const p='script/build.ts'; if(!fs.existsSync(p)){console.error('Missing '+p+'. Check .vercelignore/.gitignore and repository files.'); process.exit(1);} console.log('Found '+p);\"",
+    "prebuild": "node -e \"const {existsSync} = require('fs'); const {execSync} = require('child_process'); const p='script/build.ts'; console.log('--- prebuild diagnostics ---'); try { execSync('pwd'); } catch {} try { execSync('ls -la', { stdio: 'inherit' }); } catch {} try { execSync('ls -la script', { stdio: 'inherit' }); } catch (e) { console.error('Could not list script/:', e?.message||e); } if(!existsSync(p)){console.error('Missing '+p+' in build workspace. If deploying from Vercel, verify Root Directory and that .vercelignore/.gitignore are not excluding it.'); process.exit(1);} console.log('Found '+p);\"",
     "build": "tsx ./script/build.ts",
     "vercel-build": "npm run build",
     "start": "NODE_ENV=production node dist/index.cjs",
